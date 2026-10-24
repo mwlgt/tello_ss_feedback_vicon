@@ -33,62 +33,9 @@ class StateFeedbackController : public rclcpp::Node
       timer_ = this->create_wall_timer(1000ms, std::bind(&StateFeedbackController::CallbackT, this));
       timer_control_ = this->create_wall_timer(20ms, std::bind(&StateFeedbackController::ControllCallback, this));
 
-      init_matrices();
     }
 
   private:
-    void init_matrices() {
-        double g = 9.81;
-        double m = 0.068;
-        double Ix = 0.0000686;
-        double Iy = 0.000092;
-        double Iz = 0.0001366;
-
-        A = Eigen::MatrixXd::Zero(12, 12);
-        A(0,1)=1; A(1,8)=g; A(2,3)=1; A(3,6)=-g; A(4,5)=1; 
-        A(6,7)=1; A(8,9)=1; A(10,11)=1;
-
-        B = Eigen::MatrixXd::Zero(12, 4);
-        B(5,0)=1/m; B(7,1)=1/Ix; B(9,2)=1/Iy; B(11,3)=1/Iz;
-
-        // Expanded to 6x12 to match the full 6-DOF VICON pose measurements[cite: 1, 2]
-        C = Eigen::MatrixXd::Zero(6, 12);
-        C(0,0) = 1;  // x
-        C(1,2) = 1;  // y
-        C(2,4) = 1;  // z
-        C(3,6) = 1;  // roll (phi)
-        C(4,8) = 1;  // pitch (theta)
-        C(5,10) = 1; // yaw (psi)
-
-        K = Eigen::MatrixXd(4, 12);
-        K << 0, 0, 0, 0, 0, 0.122400, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, -0.0006293577982, 0, 0, 0.003087, 0.00093296, 0, 0, 0, 0,
-             0, 0.0008440366972, 0, 0, 0, 0, 0, 0, 0.004140, 0.00125120, 0, 0,
-             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.00024588;
-
-        L = Eigen::MatrixXd(12, 6);
-        L << 9.00, 0, 0, 0, 0, 0,
-             20.00, 0, 0, 0, 0, 0,
-             0, 9.20, 0, 0, 0, 0,
-             0, 20.91, 0, 0, 0, 0,
-             0, 0, 9.40, 0, 0, 0,
-             0, 0, 21.84, 0, 0, 0,
-             0, 0, 0, 9.60, 0, 0,
-             0, 0, 0, 22.79, 0, 0,
-             0, 0, 0, 0, 9.80, 0,
-             0, 0, 0, 0, 23.76, 0,
-             0, 0, 0, 0, 0, 10.00,
-             0, 0, 0, 0, 0, 24.75;
-
-        K_bar = Eigen::MatrixXd(4, 4);
-        K_bar << 0, 0, 0.122400, 0,
-                 0, -0.0006293577982, 0, 0,
-                 0.0008440366972, 0, 0, 0,
-                 0, 0, 0, 0.00024588;
-
-        x_hat = Eigen::VectorXd::Zero(12);
-        u = Eigen::VectorXd::Zero(4);
-    }
 
     double get_yaw(double qw, double qx, double qy, double qz) {
         Eigen::Quaterniond q(qw, qx, qy, qz);
@@ -128,11 +75,11 @@ class StateFeedbackController : public rclcpp::Node
     void ControllCallback() {
 
 
-        double ex = des_x - curr_x;
-        double ey = des_y - curr_y;
-        double ez = des_z - curr_z;
-        double eYaw = des_yaw-curr_yaw;
-        
+      double ex = des_x - curr_x;
+      double ey = des_y - curr_y;
+      double ez = des_z - curr_z;
+      double eYaw = des_yaw-curr_yaw;
+      
         
 
 
@@ -156,9 +103,6 @@ class StateFeedbackController : public rclcpp::Node
 
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::TimerBase::SharedPtr timer_control_;
-
-    Eigen::MatrixXd A, B, C, L, K, K_bar;
-    Eigen::VectorXd x_hat, u;
 
     double curr_x = 0.0, curr_y = 0.0, curr_z = 0.0;
     double curr_roll = 0.0, curr_pitch = 0.0, curr_yaw = 0.0;
